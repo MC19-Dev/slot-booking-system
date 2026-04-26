@@ -20,7 +20,7 @@ jobs:
       OTHER_ACCOUNT_3_EMAIL: ${{ secrets.OTHER_ACCOUNT_3_EMAIL }}
       OTHER_ACCOUNT_3_PASSWORD: ${{ secrets.OTHER_ACCOUNT_3_PASSWORD }}
 
-  steps:
+    steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
