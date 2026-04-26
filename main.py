@@ -1,4 +1,5 @@
 import os
+import random
 import time
 from dataclasses import dataclass
 from typing import List, Optional
@@ -13,97 +14,131 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 
-BASE_URL = "https://sportinclujnapoca.ro/reservations/football?preferredSportComplex=la-terenuri-base"
+TIMEZONE = ZoneInfo("Europe/Bucharest")
+BASE_DOMAIN = "https://sportinclujnapoca.ro"
+
+SPORT_SLUGS = {
+    "Fotbal": "football",
+    "Tenis de masa": "table-tennis",
+    "Baschet": "basketball",
+    "Tenis": "tennis",
+    "Tenis cu peretele": "wall-tennis",
+    "Squash": "squash",
+    "Volei": "volleyball",
+}
+
+COMPLEX_SLUGS = {
+    "Baza Sportivă Gheorgheni": "gheorgheni-base",
+    "Baza Sportivă „La Terenuri“": "la-terenuri-base",
+}
+
+ALLOWED_SPORT_NAMES = set(SPORT_SLUGS.keys())
+ALLOWED_SPORTS_COMPLEXES = set(COMPLEX_SLUGS.keys())
 
 SPORT_NAME = os.environ.get("SPORT_NAME", "Fotbal")
-SPORTS_COMPLEX = os.environ.get("SPORTS_COMPLEX", "Baza Sportivă Gheorgheni")
+SPORTS_COMPLEX = os.environ.get("SPORTS_COMPLEX", "Baza Sportivă „La Terenuri“")
 
-TIMEZONE = ZoneInfo("Europe/Bucharest")
-
-ALLOWED_SPORTS = [
-    "Tenis de masa",
-    "Fotbal",
-    "Baschet",
-    "Tenis",
-    "Tenis cu peretele",
-    "Squash",
-    "Volei",
-]
-
-ALLOWED_SPORTS_COMPLEXES = [
-    "Baza Sportivă Gheorgheni",
-    "Baza Sportivă „La Terenuri“",
-]
+TARGET_URL = f"{BASE_DOMAIN}/reservations/{SPORT_SLUGS.get(SPORT_NAME, 'football')}?preferredSportComplex={COMPLEX_SLUGS.get(SPORTS_COMPLEX, 'la-terenuri-base')}"
 
 @dataclass
 class Account:
     email: str
     password: str
 
+def get_accounts() -> tuple[Account, List[Account]]:
+    main_email = os.environ.get("MAIN_ACCOUNT_EMAIL")
+    main_pass = os.environ.get("MAIN_ACCOUNT_PASSWORD")
+    
+    if not main_email or not main_pass:
+        raise ValueError("CRITICAL: MAIN_ACCOUNT_EMAIL or PASSWORD not set in environment.")
+    
+    main_acc = Account(email=main_email, password=main_pass)
+    
+    others = []
+    for i in range(1, 4):
+        email = os.environ.get(f"OTHER_ACCOUNT_{i}_EMAIL")
+        pw = os.environ.get(f"OTHER_ACCOUNT_{i}_PASSWORD")
+        if email and pw:
+            others.append(Account(email=email, password=pw))
+            
+    return main_acc, others
 
-MAIN_ACCOUNT = Account(
-    email=os.environ["MAIN_ACCOUNT_EMAIL"],
-    password=os.environ["MAIN_ACCOUNT_PASSWORD"],
-)
-
-OTHER_ACCOUNTS: List[Account] = []
-
-if os.environ.get("OTHER_ACCOUNT_1_EMAIL") and os.environ.get("OTHER_ACCOUNT_1_PASSWORD"):
-    OTHER_ACCOUNTS.append(
-        Account(
-            email=os.environ["OTHER_ACCOUNT_1_EMAIL"],
-            password=os.environ["OTHER_ACCOUNT_1_PASSWORD"],
-        )
-    )
-
-if os.environ.get("OTHER_ACCOUNT_2_EMAIL") and os.environ.get("OTHER_ACCOUNT_2_PASSWORD"):
-    OTHER_ACCOUNTS.append(
-        Account(
-            email=os.environ["OTHER_ACCOUNT_2_EMAIL"],
-            password=os.environ["OTHER_ACCOUNT_2_PASSWORD"],
-        )
-    )
-
-if os.environ.get("OTHER_ACCOUNT_3_EMAIL") and os.environ.get("OTHER_ACCOUNT_3_PASSWORD"):
-    OTHER_ACCOUNTS.append(
-        Account(
-            email=os.environ["OTHER_ACCOUNT_3_EMAIL"],
-            password=os.environ["OTHER_ACCOUNT_3_PASSWORD"],
-        )
-    )
+MAIN_ACCOUNT, OTHER_ACCOUNTS = get_accounts()
 
 
-def build_driver() -> webdriver.Chrome:
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
+def build_driver() -> webdriver.Firefox:
 
-    return webdriver.Chrome(options=options)
+    is_github = os.environ.get("GITHUB_ACTIONS") == "true"
+
+    if is_github:
+        from selenium.webdriver.firefox.options import Options as FirefoxOptions
+        options = FirefoxOptions()
+        options.add_argument("--headless")
+        options.set_preference("dom.webdriver.enabled", False)
+        return webdriver.Firefox(options=options)
+    
+    else:
+        from selenium.webdriver.chrome.options import Options
+        options = webdriver.ChromeOptions()
+    
+        options.add_argument("--headless=new") 
+        
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--remote-debugging-port=9222")
+
+        options.add_argument("--window-size=1920,1080")
+
+        return webdriver.Chrome(options=options)
+
+
+def wait_for_release_time(target_hour: int):
+    """
+    Pauses the script until 1 second before the target_hour.
+    If we want a 16:00 slot, we wait until 15:59:59.
+    """
+    print(f"[TIMER] Target release: {target_hour}:00:00. Waiting...")
+    
+    while True:
+        now = datetime.now(TIMEZONE)
+        
+        if now.hour == (target_hour - 1) and now.minute == 59 and now.second >= 59:
+            print(f"[FIRE] {now.strftime('%H:%M:%S')} reached. Pouncing!")
+            break
+            
+        if now.hour >= target_hour:
+            print("[INFO] Slot should already be released. Proceeding immediately.")
+            break
+
+        if now.minute == 59 and now.second > 50:
+            time.sleep(0.3)
+        else:
+            time.sleep(2)
 
 
 def get_now():
-    return datetime(2026, 4, 18, 15, 55, tzinfo=TIMEZONE)
+    return datetime.now(TIMEZONE)
 
 
 def get_target_reservation_datetime(now=None):
     if now is None:
         now = datetime.now(TIMEZONE)
 
-    next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-    target_dt = next_hour + timedelta(days=14)
-    return target_dt
+    if now.minute < 10:
+        base_hour = now.replace(minute=0, second=0, microsecond=0)
+    else:
+        base_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        
+    return base_hour + timedelta(days=7)
 
 
-def get_week_clicks_from_now(now=None):
+def get_week_clicks_needed(now=None):
     if now is None:
         now = datetime.now(TIMEZONE)
 
     target_dt = get_target_reservation_datetime(now)
     delta_days = (target_dt.date() - now.date()).days
-    return round(delta_days / 7)
+    return delta_days // 7
 
 
 def wait_click(driver, by, value, timeout=10):
@@ -141,7 +176,7 @@ def safe_click_if_present(driver, by, value, timeout=3) -> bool:
 
 
 def validate_config():
-    if SPORT_NAME not in ALLOWED_SPORTS:
+    if SPORT_NAME not in ALLOWED_SPORT_NAMES:
         raise ValueError(f"Invalid SPORT_NAME: '{SPORT_NAME}'.")
 
     if SPORTS_COMPLEX not in ALLOWED_SPORTS_COMPLEXES:
@@ -201,26 +236,26 @@ def click_arrow_forward(driver, times=1, timeout=10):
 
 
 def select_day(driver, day: int):
-    buttons = WebDriverWait(driver, 10).until(
-        EC.presence_of_all_elements_located((By.XPATH, '//button[h6[2]]'))
+    target_xpath = (
+        f"//button[not(@disabled) and not(@aria-disabled='true')]"
+        f"//h6[contains(text(), '{day}')]"
     )
+    
+    try:
+        btn = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, target_xpath))
+        )
+        
+        time.sleep(random.uniform(0.3, 0.6)) 
+        
+        driver.execute_script("arguments[0].click();", btn)
+        print(f"[DEBUG] Successfully clicked day {day}")
+    except TimeoutException:
+        driver.save_screenshot("calendar_not_found.png")
+        raise TimeoutException(f"Could not find or click day {day}. Check calendar_not_found.png")
 
-    for btn in buttons:
-        try:
-            day_text = btn.find_element(By.XPATH, './h6[2]').text.strip()
-            disabled = btn.get_attribute("disabled")
-            aria_disabled = btn.get_attribute("aria-disabled")
 
-            if day_text == str(day) and disabled is None and aria_disabled != "true":
-                driver.execute_script("arguments[0].click();", btn)
-                return
-        except Exception:
-            continue
-
-    raise TimeoutException(f"Could not find day {day} in the calendar.")
-
-
-def try_select_time(driver, time_text: str, timeout=2) -> bool:
+def try_select_time(driver, time_text: str, timeout=1) -> bool:
     try:
         btn = WebDriverWait(driver, timeout).until(
             EC.element_to_be_clickable((
@@ -228,7 +263,8 @@ def try_select_time(driver, time_text: str, timeout=2) -> bool:
                 f'//div[@role="button"][.//span[normalize-space()="{time_text}"]]'
             ))
         )
-        btn.click()
+        time.sleep(random.uniform(0.15, 0.35))
+        driver.execute_script("arguments[0].click();", btn)
         return True
     except TimeoutException:
         return False
@@ -275,16 +311,17 @@ def get_confirmation_link(driver, timeout=10) -> str:
 
 
 def open_reservation_page_and_prepare(driver, week_clicks: int):
-    driver.get(BASE_URL)
+    driver.get(TARGET_URL)
     accept_cookies_if_present(driver)
     click_reserve_now_if_present(driver)
     select_sport(driver, SPORT_NAME)
     select_sports_complex(driver, SPORTS_COMPLEX)
     driver.execute_script("window.scrollBy(0, 400);")
     click_arrow_forward(driver, times=week_clicks)
+    time.sleep(1)
 
 
-def wait_for_slot_and_select(driver, day: int, time_text: str, week_clicks: int, max_minutes=10, retry_delay=2) -> bool:
+def wait_for_slot_and_select(driver: webdriver.Firefox | webdriver.Chrome, day: int, time_text: str, week_clicks: int, max_minutes=10, retry_delay=2) -> bool:
     deadline = time.time() + max_minutes * 60
     attempt = 0
 
@@ -293,18 +330,24 @@ def wait_for_slot_and_select(driver, day: int, time_text: str, week_clicks: int,
         print(f"[INFO] Attempt {attempt}: checking day {day}, time {time_text}...")
 
         try:
-            open_reservation_page_and_prepare(driver, week_clicks)
             select_day(driver, day)
 
-            if try_select_time(driver, time_text, timeout=2):
+            if try_select_time(driver, time_text, timeout=0.8):
                 print(f"[INFO] Slot found: day {day}, time {time_text}")
+                driver.save_screenshot(f"found_slot_{day}_{time_text}.png")
                 return True
-
-            print(f"[INFO] Slot not available yet. Retrying in {retry_delay}s...")
-            time.sleep(retry_delay)
+            
+            if attempt % 8 == 0:
+                print("[INFO] Periodic hard refresh to keep session alive...")
+                driver.refresh()
+                open_reservation_page_and_prepare(driver, week_clicks)
+            else:
+                wait_time = random.uniform(0.8, 1.5)
+                time.sleep(wait_time)
 
         except Exception as e:
             print(f"[WARN] Attempt {attempt} failed: {e}")
+            open_reservation_page_and_prepare(driver, week_clicks)
             time.sleep(retry_delay)
 
     print(f"[ERROR] Slot was not found within {max_minutes} minutes.")
@@ -312,22 +355,29 @@ def wait_for_slot_and_select(driver, day: int, time_text: str, week_clicks: int,
 
 
 def create_reservation(driver) -> str:
+    # now = get_now()
     target_dt = get_target_reservation_datetime()
+    # target_dt = get_target_reservation_datetime(now=now)
     target_day = target_dt.day
     target_time = target_dt.strftime("%H:%M")
-    week_clicks = get_week_clicks_from_now()
-    # week_clicks = get_week_clicks_from_now(now=now)
+    week_clicks = get_week_clicks_needed()
+    # week_clicks = get_week_clicks_needed(now=now)
 
 
-    print(f"Target reservation datetime: {target_dt}")
-    print(f"Target day: {target_day}")
-    print(f"Target time: {target_time}")
-    print(f"Calendar week clicks: {week_clicks}")
+    print(f"[INFO] Target reservation datetime: {target_dt}")
+    print(f"[INFO] Target day: {target_day}")
+    print(f"[INFO] Target time: {target_time}")
+    print(f"[INFO] Calendar week clicks: {week_clicks}")
 
-    driver.get(BASE_URL)
+    driver.get(TARGET_URL)
     accept_cookies_if_present(driver)
     click_login_if_present(driver)
     login(driver, MAIN_ACCOUNT)
+
+    print("[INFO] Preparing calendar and navigating to the target week...")
+    open_reservation_page_and_prepare(driver, week_clicks)
+
+    wait_for_release_time(target_dt.hour)
 
     slot_found = wait_for_slot_and_select(
         driver=driver,
@@ -371,20 +421,37 @@ def main():
 
     try:
         confirmation_link = create_reservation(driver)
-        print(f"Confirmation link: {confirmation_link}")
+        print(f"[SUCCESS] Slot secured! Link: {confirmation_link}")
+    except Exception as e:
+        print(f"[CRITICAL ERROR] Failed to create reservation: {e}")
+        driver.save_screenshot("main_error.png")
+        return
     finally:
         driver.quit()
 
     if not confirmation_link:
-        raise RuntimeError("Could not extract the confirmation link.")
+        print("[ERROR] No confirmation link found. Exiting.")
+        return
 
-    for account in OTHER_ACCOUNTS:
+    print(f"Starting confirmations for {len(OTHER_ACCOUNTS)} secondary accounts...")
+    
+    for i, account in enumerate(OTHER_ACCOUNTS):
+        if i > 0:
+            delay = random.randint(30, 90)
+            print(f"Waiting {delay}s before next account...")
+            time.sleep(delay)
+
         driver = build_driver()
         try:
             confirm_from_shared_link(driver, account, confirmation_link)
-            print(f"Confirmed from account: {account.email}")
+            print(f"[SUCCESS] Account {account.email} confirmed.")
+        except Exception as e:
+            print(f"[WARNING] Account {account.email} failed: {e}")
+            driver.save_screenshot(f"error_{account.email}.png")
         finally:
             driver.quit()
+
+    print("Automation process finished.")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# football_booking
+# slot-booking-system
 
 ```mermaid
 flowchart TD
