@@ -129,7 +129,7 @@ def get_target_reservation_datetime(now=None):
     else:
         base_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         
-    return base_hour + timedelta(days=7)
+    return base_hour + timedelta(days=14)
 
 
 def get_week_clicks_needed(now=None):
