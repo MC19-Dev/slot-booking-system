@@ -2,9 +2,8 @@ name: Tenis Slot Booking
 
 on:
   schedule:
-    - cron: '*/5 * * * *' # Runs every Monday at 18:55 Bucharest time (15:55 UTC)
-      timezone: 'Europe/Bucharest'
-  # workflow_dispatch:
+    - cron: '*55 15 * * SAT' # Runs every Saturday at 18:55 Bucharest time (15:55 UTC)
+  workflow_dispatch:
 
 jobs:
   book_slot:
@@ -37,14 +36,14 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      # - name: Run booking script
-      #   timeout-minutes: 15
-      #   run: uv run python main.py
+      - name: Run booking script
+        timeout-minutes: 15
+        run: uv run python main.py
 
-      # - name: Upload screenshots
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: bot-screenshots
-      #     path: "*.png"
-      #     retention-days: 3
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-screenshots
+          path: "*.png"
+          retention-days: 3
