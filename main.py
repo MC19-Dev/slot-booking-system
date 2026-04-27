@@ -36,6 +36,7 @@ ALLOWED_SPORT_NAMES = set(SPORT_SLUGS.keys())
 ALLOWED_SPORTS_COMPLEXES = set(COMPLEX_SLUGS.keys())
 
 SPORT_NAME = os.environ.get("SPORT_NAME", "Fotbal")
+FIELD_NAME = os.environ.get("FIELD_NAME", "Fotbal 2")
 SPORTS_COMPLEX = os.environ.get("SPORTS_COMPLEX", "Baza Sportivă „La Terenuri“")
 
 TARGET_URL = f"{BASE_DOMAIN}/reservations/{SPORT_SLUGS.get(SPORT_NAME, 'football')}?preferredSportComplex={COMPLEX_SLUGS.get(SPORTS_COMPLEX, 'la-terenuri-base')}"
@@ -117,7 +118,8 @@ def wait_for_release_time(target_hour: int):
 
 
 def get_now():
-    return datetime.now(TIMEZONE)
+    """Mockable current datetime for testing purposes."""
+    return datetime(2026, 4, 27, 14, 55, tzinfo=TIMEZONE)
 
 
 def get_target_reservation_datetime(now=None):
@@ -217,8 +219,25 @@ def select_sport(driver, sport_name: str):
 
 
 def select_sports_complex(driver, option_text: str):
-    wait_click(driver, By.ID, "mui-component-select-sportsComplexSlug", timeout=10)
-    wait_click(driver, By.XPATH, f'//li[normalize-space()="{option_text}"]', timeout=10)
+    print(f"[INFO] Selecting sports complex: {option_text}...")
+    try:
+        wait_click(driver, By.ID, "mui-component-select-sportsComplexSlug", timeout=10)
+        wait_click(driver, By.XPATH, f'//li[normalize-space()="{option_text}"]', timeout=10)
+        time.sleep(1)
+    except Exception as e:
+        print(f"[WARN] Complex selection failed: {e}")
+
+
+def select_specific_field(driver, field_name: str):
+    print(f"[INFO] Selecting field: {field_name}...")
+    try:
+        wait_click(driver, By.ID, "mui-component-select-courtId", timeout=10)
+        wait_click(driver, By.XPATH, f'//li[normalize-space()="{field_name}"]', timeout=10)
+        time.sleep(1)
+    except Exception as e:
+        print(f"[WARN] Field selection failed: {e}")
+        driver.save_screenshot("field_selection_debug.png")
+        raise e
 
 
 def click_arrow_forward(driver, times=1, timeout=10):
@@ -271,33 +290,35 @@ def try_select_time(driver, time_text: str, timeout=1) -> bool:
 
 
 def click_reserve_button(driver):
-    wait_click(
-        driver,
-        By.XPATH,
-        '//button[@type="submit" and normalize-space()="Rezervă"]',
-        timeout=10
+    print("[INFO] Clicking the 'Rezervă' button...")
+    btn = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((
+            By.XPATH, 
+            '//button[@type="submit" and (normalize-space()="Rezervă" or contains(., "Rezervă"))]'
+        ))
     )
+    driver.execute_script("arguments[0].click();", btn)
 
+def click_confirm_reservation(driver):
+    print("[INFO] Clicking the 'Confirmă rezervarea' button...")
+    btn = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((
+            By.XPATH, 
+            '//button[normalize-space()="Confirmă rezervarea"]'
+        ))
+    )
+    driver.execute_script("arguments[0].click();", btn)
 
 def check_all_visible_checkboxes(driver, timeout=10):
+    print("[INFO] Checking all policy checkboxes...")
     checkboxes = WebDriverWait(driver, timeout).until(
         EC.presence_of_all_elements_located(
             (By.XPATH, '//input[@type="checkbox" and not(@disabled)]')
         )
     )
-
     for checkbox in checkboxes:
         if not checkbox.is_selected():
             driver.execute_script("arguments[0].click();", checkbox)
-
-
-def click_confirm_reservation(driver):
-    wait_click(
-        driver,
-        By.XPATH,
-        '//button[normalize-space()="Confirmă rezervarea"]',
-        timeout=10
-    )
 
 
 def get_confirmation_link(driver, timeout=10) -> str:
@@ -316,6 +337,7 @@ def open_reservation_page_and_prepare(driver, week_clicks: int):
     click_reserve_now_if_present(driver)
     select_sport(driver, SPORT_NAME)
     select_sports_complex(driver, SPORTS_COMPLEX)
+    select_specific_field(driver, FIELD_NAME)
     driver.execute_script("window.scrollBy(0, 400);")
     click_arrow_forward(driver, times=week_clicks)
     time.sleep(1)
