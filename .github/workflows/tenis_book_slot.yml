@@ -1,4 +1,4 @@
-name: Football Slot Booking
+name: Tenis Slot Booking
 
 on:
   schedule:
@@ -36,13 +36,13 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Run Booking Script
+      - name: Run booking script
         run: uv run python main.py
 
-      - name: Upload Screenshots (If failed or succeeded)
+      - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bot-screenshots
           path: "*.png"
-          retention-days: 5
+          retention-days: 3
