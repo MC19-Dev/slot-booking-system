@@ -1,0 +1,48 @@
+name: Football Slot Booking
+
+on:
+  schedule:
+    - cron: '58 07 * * MON' # Runs every Monday at 10:55 Bucharest time (07:55 UTC)
+  workflow_dispatch:
+
+jobs:
+  book_slot:
+    runs-on: ubuntu-latest
+    env:
+      SPORT_NAME: ${{ secrets.SPORT_NAME || 'Tenis' }}
+      SPORTS_COMPLEX: ${{ secrets.SPORTS_COMPLEX || 'Baza Sportivă „La Terenuri“' }}
+      MAIN_ACCOUNT_EMAIL: ${{ secrets.MAIN_ACCOUNT_EMAIL }}
+      MAIN_ACCOUNT_PASSWORD: ${{ secrets.MAIN_ACCOUNT_PASSWORD }}
+      OTHER_ACCOUNT_1_EMAIL: ${{ secrets.OTHER_ACCOUNT_1_EMAIL }}
+      OTHER_ACCOUNT_1_PASSWORD: ${{ secrets.OTHER_ACCOUNT_1_PASSWORD }}
+      OTHER_ACCOUNT_2_EMAIL: ${{ secrets.OTHER_ACCOUNT_2_EMAIL }}
+      OTHER_ACCOUNT_2_PASSWORD: ${{ secrets.OTHER_ACCOUNT_2_PASSWORD }}
+      OTHER_ACCOUNT_3_EMAIL: ${{ secrets.OTHER_ACCOUNT_3_EMAIL }}
+      OTHER_ACCOUNT_3_PASSWORD: ${{ secrets.OTHER_ACCOUNT_3_PASSWORD }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.10
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run Booking Script
+        run: uv run python main.py
+
+      - name: Upload Screenshots (If failed or succeeded)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bot-screenshots
+          path: "*.png"
+          retention-days: 5

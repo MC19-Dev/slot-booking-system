@@ -2,7 +2,7 @@ name: Football Slot Booking
 
 on:
   schedule:
-    - cron: '55 16 * * MON' # Runs every Monday at 19:55 Bucharest time (16:55 UTC)
+    - cron: '58 16 * * MON' # Runs every Monday at 19:55 Bucharest time (16:55 UTC)
   workflow_dispatch:
 
 jobs:
@@ -45,4 +45,4 @@ jobs:
         with:
           name: bot-screenshots
           path: "*.png"
-          retention-days: 7
+          retention-days: 5

@@ -36,7 +36,7 @@ ALLOWED_SPORT_NAMES = set(SPORT_SLUGS.keys())
 ALLOWED_SPORTS_COMPLEXES = set(COMPLEX_SLUGS.keys())
 
 SPORT_NAME = os.environ.get("SPORT_NAME", "Fotbal")
-FIELD_NAME = os.environ.get("FIELD_NAME", "Fotbal 2")
+FIELD_NAME = os.environ.get("FIELD_NAME", f"{SPORT_NAME} 2")
 SPORTS_COMPLEX = os.environ.get("SPORTS_COMPLEX", "Baza Sportivă „La Terenuri“")
 
 TARGET_URL = f"{BASE_DOMAIN}/reservations/{SPORT_SLUGS.get(SPORT_NAME, 'football')}?preferredSportComplex={COMPLEX_SLUGS.get(SPORTS_COMPLEX, 'la-terenuri-base')}"
@@ -228,7 +228,7 @@ def select_sports_complex(driver, option_text: str):
         print(f"[WARN] Complex selection failed: {e}")
 
 
-def select_specific_field(driver, field_name: str):
+def select_sport_field(driver, field_name: str):
     print(f"[INFO] Selecting field: {field_name}...")
     try:
         wait_click(driver, By.ID, "mui-component-select-courtId", timeout=10)
@@ -337,7 +337,7 @@ def open_reservation_page_and_prepare(driver, week_clicks: int):
     click_reserve_now_if_present(driver)
     select_sport(driver, SPORT_NAME)
     select_sports_complex(driver, SPORTS_COMPLEX)
-    select_specific_field(driver, FIELD_NAME)
+    select_sport_field(driver, FIELD_NAME)
     driver.execute_script("window.scrollBy(0, 400);")
     click_arrow_forward(driver, times=week_clicks)
     time.sleep(1)
@@ -364,7 +364,10 @@ def wait_for_slot_and_select(driver: webdriver.Firefox | webdriver.Chrome, day: 
                 driver.refresh()
                 open_reservation_page_and_prepare(driver, week_clicks)
             else:
-                wait_time = random.uniform(0.8, 1.5)
+                print("[INFO] Toggling Field to force update...")
+                other_field = f"{SPORT_NAME} 1" if FIELD_NAME == f"{SPORT_NAME} 2" else f"{SPORT_NAME} 2"
+                select_sport_field(driver, other_field)
+                wait_time = random.uniform(1, 3)
                 time.sleep(wait_time)
 
         except Exception as e:
