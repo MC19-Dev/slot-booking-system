@@ -356,7 +356,8 @@ def wait_for_slot_and_select(driver: webdriver.Firefox | webdriver.Chrome, day: 
 
             if try_select_time(driver, time_text, timeout=0.8):
                 print(f"[INFO] Slot found: day {day}, time {time_text}")
-                driver.save_screenshot(f"found_slot_{day}_{time_text}.png")
+                filename = f"found_slot_{day}_{time_text.replace(':', '-')}.png"
+                driver.save_screenshot(filename)
                 return True
             
             if attempt % 8 == 0:
