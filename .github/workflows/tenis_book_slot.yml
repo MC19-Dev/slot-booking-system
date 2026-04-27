@@ -2,7 +2,7 @@ name: Tenis Slot Booking
 
 on:
   schedule:
-    - cron: '58 15 * * MON' # Runs every Monday at 18:55 Bucharest time (15:55 UTC)
+    - cron: '55 15 * * MON' # Runs every Monday at 18:55 Bucharest time (15:55 UTC)
   workflow_dispatch:
 
 jobs:
