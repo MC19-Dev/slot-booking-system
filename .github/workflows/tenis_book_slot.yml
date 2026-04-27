@@ -37,6 +37,7 @@ jobs:
         run: uv sync
 
       - name: Run booking script
+        timeout-minutes: 15
         run: uv run python main.py
 
       - name: Upload screenshots
