@@ -410,7 +410,7 @@ def create_reservation(driver) -> str:
         day=target_day,
         time_text=target_time,
         week_clicks=week_clicks,
-        max_minutes=10,
+        max_minutes=15,
         retry_delay=2
     )
 
