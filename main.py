@@ -126,7 +126,7 @@ def get_target_reservation_datetime(now=None):
     if now is None:
         now = datetime.now(TIMEZONE)
 
-    if now.minute < 10:
+    if now.minute < 20:
         base_hour = now.replace(minute=0, second=0, microsecond=0)
     else:
         base_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
