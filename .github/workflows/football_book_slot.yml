@@ -2,7 +2,7 @@ name: Football Slot Booking
 
 on:
   schedule:
-    - cron: '45 16 * * FRI' # Runs every Sunday at 19:55 Bucharest time (16:55 UTC)
+    - cron: '35 16 * * FRI' # Runs every Friday at 19:35 Bucharest time (16:35 UTC)
   workflow_dispatch:
 
 jobs:
