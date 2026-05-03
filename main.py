@@ -126,7 +126,7 @@ def get_target_reservation_datetime(now=None):
     if now is None:
         now = datetime.now(TIMEZONE)
 
-    if now.minute < 15:
+    if now.minute < 10:
         base_hour = now.replace(minute=0, second=0, microsecond=0)
     else:
         base_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
@@ -257,7 +257,7 @@ def click_arrow_forward(driver, times=1, timeout=10):
 def select_day(driver, day: int):
     target_xpath = (
         f"//button[not(@disabled) and not(@aria-disabled='true')]"
-        f"//h6[contains(text(), '{day}')]"
+        f"//h6[normalize-space()='{day}']"
     )
     
     try:
@@ -410,7 +410,7 @@ def create_reservation(driver) -> str:
         day=target_day,
         time_text=target_time,
         week_clicks=week_clicks,
-        max_minutes=15,
+        max_minutes=30,
         retry_delay=2
     )
 
