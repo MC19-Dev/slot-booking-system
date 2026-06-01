@@ -466,6 +466,9 @@ def main():
             delay = random.randint(30, 90)
             print(f"Waiting {delay}s before next account...")
             time.sleep(delay)
+        
+        if SPORT_NAME == "Tenis" and i == 1:
+            break
 
         driver = build_driver()
         try:
