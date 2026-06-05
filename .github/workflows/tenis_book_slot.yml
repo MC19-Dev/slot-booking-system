@@ -2,7 +2,7 @@ name: Tenis Slot Booking
 
 on:
   schedule:
-    - cron: '55 15 * * FRI' # Runs every Friday at 18:55 (+ 1h delay GHA) Bucharest time (15:55 UTC)
+    - cron: '55 15 * * WED' # Runs every Friday at 18:55 (+ 1h delay GHA) Bucharest time (15:55 UTC)
   workflow_dispatch:
 
 jobs:
