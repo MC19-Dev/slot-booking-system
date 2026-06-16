@@ -2,13 +2,14 @@ name: Tenis Slot Booking
 
 on:
   schedule:
-    - cron: '55 15 * * FRI' # Runs every Friday at 18:55 (+ 1h delay GHA) Bucharest time (15:55 UTC)
+    - cron: '55 16 * * FRI' # Runs every Friday at 19:55 (+ 1h delay GHA) Bucharest time (15:55 UTC)
   workflow_dispatch:
 
 jobs:
   book_slot:
     runs-on: ubuntu-latest
     env:
+      MAX_MINUTES: 30
       SPORT_NAME: ${{ secrets.SPORT_NAME || 'Tenis' }}
       SPORTS_COMPLEX: ${{ secrets.SPORTS_COMPLEX || 'Baza Sportivă „La Terenuri“' }}
       MAIN_ACCOUNT_EMAIL: ${{ secrets.MAIN_ACCOUNT_EMAIL }}
@@ -31,7 +32,7 @@ jobs:
           version: "latest"
 
       - name: Set up Python
-        run: uv python install 3.10
+        run: uv python install 3.11
 
       - name: Install dependencies
         run: uv sync

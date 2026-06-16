@@ -3,7 +3,8 @@ name = "football-booking"
 version = "0.1.0"
 description = "Football slot booking"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
+    "google-cloud-storage>=3.11.0",
     "selenium>=4.20.0",
 ]

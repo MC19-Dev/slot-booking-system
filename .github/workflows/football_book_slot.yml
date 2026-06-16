@@ -9,6 +9,7 @@ jobs:
   book_slot:
     runs-on: ubuntu-latest
     env:
+      MAX_MINUTES: 30
       SPORT_NAME: ${{ secrets.SPORT_NAME || 'Fotbal' }}
       SPORTS_COMPLEX: ${{ secrets.SPORTS_COMPLEX || 'Baza Sportivă „La Terenuri“' }}
       MAIN_ACCOUNT_EMAIL: ${{ secrets.MAIN_ACCOUNT_EMAIL }}
@@ -30,8 +31,8 @@ jobs:
           enable-cache: true
           version: "latest"
 
-      - name: Set up python
-        run: uv python install 3.10
+      - name: Set up Python
+        run: uv python install 3.11
 
       - name: Install dependencies
         run: uv sync
