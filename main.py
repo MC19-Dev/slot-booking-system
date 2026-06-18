@@ -85,9 +85,7 @@ def wait_for_slot_and_select(
             elif seconds_running < 840:
                 base_slug = config.FIELD_SLUGS.get(config.SPORT_NAME)
                 other_field = (
-                    "Oricare"
-                    if config.FIELD_NAME != "Oricare"
-                    else f"{base_slug} 2"
+                    "Oricare" if config.FIELD_NAME != "Oricare" else f"{base_slug} 2"
                 )
                 actions.select_sport_field(driver, other_field)
                 time.sleep(sleep_time)
@@ -126,7 +124,9 @@ def create_reservation(driver: WebDriver) -> str:
     print("[INFO] Preparing calendar and navigating to the target week...")
     actions.open_reservation_page_and_prepare(driver, week_clicks)
 
-    if not wait_for_slot_and_select(driver, target_day, target_time, week_clicks, config.MAX_MINUTES):
+    if not wait_for_slot_and_select(
+        driver, target_day, target_time, week_clicks, config.MAX_MINUTES
+    ):
         raise RuntimeError(
             f"Could not find slot for day {target_day} at {target_time}."
         )
@@ -134,10 +134,10 @@ def create_reservation(driver: WebDriver) -> str:
     actions.click_reserve_button(driver)
     actions.check_all_visible_checkboxes(driver)
     actions.click_confirm_reservation(driver)
-    if config.SPORT_NAME != "Tenis cu peretele":
-        return actions.get_confirmation_link(driver)
-    
-    return "No confirmation link available."
+    if config.SPORT_NAME == "Tenis cu peretele":
+        return None
+
+    return actions.get_confirmation_link(driver)
 
 
 def login_and_return_to_url(
