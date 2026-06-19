@@ -1,8 +1,6 @@
 name: Football Slot Booking
 
 on:
-  schedule:
-    - cron: '55 16 * * SUN' # Runs every Saturday at 19:55 (+ 1h delay GHA) Bucharest time (16:55 UTC)
   workflow_dispatch:
 
 jobs:
