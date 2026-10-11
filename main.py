@@ -1,10 +1,12 @@
-import time
 import random
+import time
 from datetime import datetime, timedelta
-import config
-import actions
-from driver import build_driver, save_and_upload_screenshot
+
 from selenium.webdriver.remote.webdriver import WebDriver
+
+import actions
+import config
+from driver import build_driver, save_and_upload_screenshot
 
 
 def get_now() -> datetime:
@@ -94,7 +96,7 @@ def wait_for_slot_and_select(
             else:
                 time.sleep(sleep_time)
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"[WARN] Attempt {attempt} encountered a handling error: {e}")
             actions.open_reservation_page_and_prepare(driver, week_clicks)
             time.sleep(retry_delay)
@@ -158,7 +160,7 @@ def confirm_from_shared_link(account: config.Account, confirmation_link: str) ->
         actions.check_all_visible_checkboxes(driver)
         actions.click_confirm_reservation(driver)
         print(f"[SUCCESS] Account {account.email} confirmed.")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[WARNING] Account {account.email} failed: {e}")
         save_and_upload_screenshot(driver, f"error_{account.email}.png")
     finally:
@@ -173,7 +175,7 @@ def main() -> None:
     try:
         confirmation_link = create_reservation(driver)
         print(f"[SUCCESS] Slot secured! Link: {confirmation_link}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         print(f"[CRITICAL ERROR] Failed to create reservation: {e}")
         save_and_upload_screenshot(driver, "main_error.png")
         return

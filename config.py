@@ -34,7 +34,7 @@ COMPLEX_SLUGS = {
 ALLOWED_SPORT_NAMES = set(SPORT_SLUGS.keys())
 ALLOWED_SPORTS_COMPLEXES = set(COMPLEX_SLUGS.keys())
 
-MAX_MINUTES = int(os.environ.get("MAX_MINUTES", 15))
+MAX_MINUTES = int(os.environ.get("MAX_MINUTES", "15"))
 SPORT_NAME = os.environ.get("SPORT_NAME", "Fotbal")
 FIELD_NAME = os.environ.get("FIELD_NAME", "Oricare")
 SPORTS_COMPLEX = os.environ.get("SPORTS_COMPLEX", "Baza Sportivă „La Terenuri“")
